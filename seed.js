@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 const MenuItem = require('./models/MenuItem');
 const DailySale = require('./models/DailySale');
@@ -16,9 +17,10 @@ const seed = async () => {
     console.log('Cleared existing data');
 
     // Create admin user
+    const adminPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'admin123', 10);
     const admin = new User({
       username: process.env.ADMIN_USERNAME || 'admin',
-      password: process.env.ADMIN_PASSWORD || 'admin123'
+      password: adminPassword
     });
     await admin.save();
     console.log('Admin user created:', admin.username);
