@@ -2,35 +2,20 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const path = require('path');
 
-// Load env vars
 dotenv.config();
 
 const app = express();
 
-// CORS - Allow Netlify frontend
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:5173',
-  process.env.FRONTEND_URL
-].filter(Boolean);
-
+// CORS - Allow all origins
 app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, postman)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      return callback(null, true); // Allow all for now, restrict in production if needed
-    }
-    return callback(null, true);
-  },
+  origin: true,
   credentials: true
 }));
 
 app.use(express.json({ limit: '10mb' }));
 
-// MongoDB Connection
+// MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('MongoDB Connected'))
   .catch(err => {
@@ -44,18 +29,24 @@ app.use('/api/menu', require('./routes/menu'));
 app.use('/api/sales', require('./routes/sales'));
 app.use('/api/reports', require('./routes/reports'));
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    name: 'KADA Hotel Sales API',
+    status: 'running',
+    version: '1.0.0'
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Serve frontend static files in production (optional - if deploying together)
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../frontend/dist')));
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../frontend/dist', 'index.html'));
-  });
-}
+// 404
+app.use((req, res) => {
+  res.status(404).json({ message: 'API endpoint not found' });
+});
 
 // Error handler
 app.use((err, req, res, next) => {
